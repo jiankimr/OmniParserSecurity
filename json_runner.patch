@@ -1,0 +1,51 @@
+--- a/omnitool/gradio/app.py
++++ b/omnitool/gradio/app.py
+@@ top of file (imports)
+-import os
++import os
+ import json
+ from datetime import datetime
+ from enum import StrEnum
++from pathlib import Path
+@@
+ CONFIG_DIR = Path("~/.anthropic").expanduser()
+ API_KEY_FILE = CONFIG_DIR / "api_key"
++
++# ── JSON Task Runner 설정 ───────────────────────────────────────────────
++DATA_DIR = Path(__file__).parent / "data"
++
++def load_json_files() -> list[str]:
++    return [p.name for p in DATA_DIR.glob("*.json") if p.suffix == ".json"]
++
++def run_json_tasks(selected_file: str, state):
++    state["stop"] = False
++    state["messages"] = []
++    state["responses"] = {}
++    state["tools"] = {}
++    state["chatbot_messages"] = []
++    tasks = json.load(open(DATA_DIR / selected_file, encoding="utf-8"))
++    for item in tasks:
++        content = item.get("data")
++        for _ in process_input(content, state):
++            yield state["chatbot_messages"]
++    return state["chatbot_messages"]
+@@ with gr.Blocks(theme=gr.themes.Default()) as demo:
+     if not os.getenv("HIDE_WARNING", False):
+         gr.Markdown(INTRO_TEXT, elem_classes="markdown-text")
++
++    # ── JSON Task Runner UI ────────────────────────────────────────────────
++    with gr.Row():
++        json_dropdown = gr.Dropdown(
++            label="Select JSON File",
++            choices=load_json_files(),
++            interactive=True
++        )
++        run_json_button = gr.Button("Run JSON Tasks")
+@@
+     submit_button.click(process_input, [chat_input, state], chatbot)
+     stop_button.click(stop_app, [state], None)
++    # JSON 순차 실행 바인딩
++    run_json_button.click(run_json_tasks, [json_dropdown, state], chatbot)
+
+ if __name__ == "__main__":
+     demo.launch(server_name="0.0.0.0", server_port=7888)

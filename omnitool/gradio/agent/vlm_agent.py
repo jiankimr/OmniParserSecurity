@@ -166,8 +166,18 @@ class VLMAgent:
             )
 
         # JSON 결과 파싱
-        response_str = extract_data(vlm_response, "json")
-        vlm_json = json.loads(response_str)
+        # response_str = extract_data(vlm_response, "json")
+        # vlm_json = json.loads(response_str)
+# JSON 결과 파싱 (실패 시 기본값으로 대체)
+        response_str = extract_data(vlm_response, "json").strip()
+        try:
+            vlm_json = json.loads(response_str)
+        except json.JSONDecodeError:
+            print(f"[VLMAgent] JSON 디코드 실패, response_str={response_str!r}")
+            vlm_json = {
+                "Reasoning": "JSON 파싱에 실패했습니다.",
+                "Next Action": "None"
+            }
 
         # 박스 시각화
         img_base64 = parsed_screen.get("som_image_base64", "")

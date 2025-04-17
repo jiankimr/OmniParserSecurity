@@ -3,6 +3,7 @@ Agentic sampling loop that calls the Anthropic API and local implenmentation of 
 """
 from collections.abc import Callable
 from enum import StrEnum
+import json
 
 from anthropic import APIResponse
 from anthropic.types import (
